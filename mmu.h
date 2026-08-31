@@ -9,7 +9,10 @@ typedef struct CPU CPU;
 
 typedef struct Bus {
   uint8_t cpu_ram[0x800];
+  uint8_t ppu_ram[0x1000];
+  uint8_t ppu_pal[0x20];
   uint8_t floatingBusValue;
+  uint8_t *mirror;
 
   CPU *cpu;
 
@@ -24,6 +27,9 @@ Bus *bus_init_bus(Cartridge *cart, Controller *player_1, Controller *player_2);
 void bus_write_cpu(Bus *bus, uint16_t addr, uint8_t val);
 void bus_write_oam(Bus *bus, uint8_t index, uint8_t val);
 uint8_t bus_read_cpu(Bus *bus, uint16_t addr);
+
+void bus_write_ppu(Bus *bus, uint16_t addr, uint8_t val);
+uint8_t bus_read_ppu(Bus *bus, uint16_t addr);
 
 void bus_increment_master_clock(Bus *bus);
 

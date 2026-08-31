@@ -2,6 +2,28 @@
 #include "cpu6502.h"
 #include "mapper.h"
 
+uint16_t mirror_ppu_address(uint16_t addr, uint8_t mirror);
+
+uint16_t mirror_ppu_address(uint16_t addr, uint8_t mirror) {
+  switch (mirror) {
+  case MIRRORING_VERTICAL:
+    addr &= 0x7FF;
+    break;
+  case MIRRORING_HORIZONTAL:
+    addr = mirror_ppu_address(addr, MIRRORING_SINGLE0) +
+           (addr >= 0x800 ? 0x400 : 0);
+    break;
+  case MIRRORING_SINGLE0:
+    addr &= 0x3FF;
+    break;
+  case MIRRORING_SINGLE1:
+    addr = mirror_ppu_address(addr, MIRRORING_SINGLE0) + 0x400;
+    break;
+  }
+
+  return addr;
+}
+
 Bus *bus_init_bus(Cartridge *cart, Controller *player_1, Controller *player_2) {
   Bus *bus = malloc(sizeof(Bus));
 
@@ -15,6 +37,7 @@ Bus *bus_init_bus(Cartridge *cart, Controller *player_1, Controller *player_2) {
 
   bus->mapper = mapper_build_mapper(cart->mapper, cart->submapper, cart);
   bus->cpu = cpu_init_cpu(bus);
+  bus->mirror = &cart->mirroring;
   return bus;
 }
 
@@ -42,6 +65,8 @@ void bus_write_cpu(Bus *bus, uint16_t addr, uint8_t val) {
 void bus_write_oam(Bus *bus, uint8_t index, uint8_t val) {
   if (!bus)
     return;
+
+  // IMPLEMENTATION NEEDED
 }
 
 uint8_t bus_read_cpu(Bus *bus, uint16_t addr) {
@@ -67,7 +92,47 @@ uint8_t bus_read_cpu(Bus *bus, uint16_t addr) {
   return bus->floatingBusValue;
 }
 
+void bus_write_ppu(Bus *bus, uint16_t addr, uint8_t val) {
+  addr &= 0x3FFF;
+
+  if (addr <= 0x1FFF)
+    mapper_ppu_write(bus->mapper, addr, val);
+  else if (addr <= 0x3EFF) {
+    addr = (addr - 0x2000) & 0xFFF;
+    addr = mirror_ppu_address(addr, *bus->mirror);
+    bus->ppu_ram[addr] = val;
+  } else {
+    addr = (addr - 0x3F00) & 0x1F;
+    if ((addr & 0x13) == 0x10)
+      addr -= 0x10;
+    bus->ppu_pal[addr] = val & 0x3F;
+  }
+}
+
+uint8_t bus_read_ppu(Bus *bus, uint16_t addr) {
+  addr &= 0x3FFF;
+  int16_t val = -1;
+
+  if (addr <= 0x1FFF)
+    val = mapper_ppu_read(bus->mapper, addr);
+  else if (addr <= 0x3EFF) {
+    addr = (addr - 0x2000) & 0xFFF;
+    addr = mirror_ppu_address(addr, *bus->mirror);
+    val = bus->ppu_ram[addr];
+  } else {
+    addr = (addr - 0x3F00) & 0x1F;
+    if ((addr & 0x13) == 0x10)
+      addr -= 0x10;
+    return bus->ppu_pal[addr];
+  }
+
+  bus->floatingBusValue = val >= 0 ? val : bus->floatingBusValue;
+  return bus->floatingBusValue;
+}
+
 void bus_increment_master_clock(Bus *bus) {
   if (!bus)
     return;
+
+  // IMPLEMENTATION NEEDED
 }
