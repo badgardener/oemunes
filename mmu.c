@@ -1,6 +1,7 @@
 #include "mmu.h"
 #include "cpu6502.h"
 #include "mapper.h"
+#include "ppu.h"
 
 uint16_t mirror_ppu_address(uint16_t addr, uint8_t mirror);
 
@@ -36,7 +37,13 @@ Bus *bus_init_bus(Cartridge *cart, Controller *player_1, Controller *player_2) {
     bus->player_2 = player_2;
 
   bus->mapper = mapper_build_mapper(cart->mapper, cart->submapper, cart);
+
+  bus->ppu_accum = 0.0;
+  bus->ppu_cpu_ratio = cart->region == REGION_PAL ? 3.2 : 3.0;
+
   bus->cpu = cpu_init_cpu(bus);
+  bus->ppu = ppu_init_ppu(bus);
+
   bus->mirror = &cart->mirroring;
   return bus;
 }
@@ -48,8 +55,9 @@ void bus_write_cpu(Bus *bus, uint16_t addr, uint8_t val) {
   if (addr <= 0x1FFF)
     bus->cpu_ram[addr & 0x7FF] = val;
   else if (addr <= 0x3FFF) {
-  } // PPU SPACE
-  else if (addr <= 0x4013) {
+    addr = (addr - 0x2000) & 7;
+    ppu_write_cpu(bus->ppu, addr, val);
+  } else if (addr <= 0x4013) {
   } // APU REG
   else if (addr == 0x4015) {
   } // APU SPECIAL REG
@@ -66,7 +74,7 @@ void bus_write_oam(Bus *bus, uint8_t index, uint8_t val) {
   if (!bus)
     return;
 
-  // IMPLEMENTATION NEEDED
+  bus->ppu->real_oam[index] = val;
 }
 
 uint8_t bus_read_cpu(Bus *bus, uint16_t addr) {
@@ -78,8 +86,9 @@ uint8_t bus_read_cpu(Bus *bus, uint16_t addr) {
   if (addr <= 0x1FFF)
     val = bus->cpu_ram[addr & 0x7FF];
   else if (addr <= 0x3FFF) {
-  } // PPU SPACE
-  else if (addr == 0x4015) {
+    addr = (addr - 0x2000) & 7;
+    val = ppu_read_cpu(bus->ppu, addr);
+  } else if (addr == 0x4015) {
   } // APU SPECIAL REG
   else if (addr == 0x4016)
     val = controller_read_bus(bus->player_1);
@@ -134,5 +143,12 @@ void bus_increment_master_clock(Bus *bus) {
   if (!bus)
     return;
 
-  // IMPLEMENTATION NEEDED
+  // apu_tick_apu(bus->apu);
+
+  while (bus->ppu_accum < bus->ppu_cpu_ratio) {
+    ppu_clock_ppu(bus->ppu);
+    bus->ppu_accum += 1.0;
+  }
+
+  bus->ppu_accum -= bus->ppu_cpu_ratio;
 }

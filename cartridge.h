@@ -51,6 +51,7 @@ typedef struct Cartridge {
 } Cartridge;
 
 Cartridge *cartridge_build_cartridge(uint8_t *rom, size_t romSize);
+
 static inline void drop_cartridge(Cartridge *cart) {
   if (cart)
     free(cart);

@@ -6,17 +6,27 @@
 #include "mapper.h"
 
 typedef struct CPU CPU;
+typedef struct PPU PPU;
+
+typedef struct APU {
+} APU; // Later, needed to be look like
+// typedef struct APU APU;
 
 typedef struct Bus {
   uint8_t cpu_ram[0x800];
   uint8_t ppu_ram[0x1000];
   uint8_t ppu_pal[0x20];
   uint8_t floatingBusValue;
-  uint8_t *mirror;
 
+  uint8_t *mirror;
   CPU *cpu;
+  PPU *ppu;
+  APU *apu;
 
   Mapper *mapper;
+
+  float ppu_accum;
+  float ppu_cpu_ratio;
 
   Controller *player_1;
   Controller *player_2;
