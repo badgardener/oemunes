@@ -1,7 +1,5 @@
 #include "cpu6502.h"
 
-#include <stdlib.h>
-
 uint8_t read_cpu(CPU *ctx, uint16_t addr);
 void write_cpu(CPU *ctx, uint16_t addr, uint8_t val);
 uint16_t PC(CPU *ctx);
@@ -89,12 +87,12 @@ void cpu_execute_cpu(CPU *ctx) {
   incrementPC(ctx);
 
   switch (ctx->opcode) {
-  case BRK_IMP:
+  case OPCODE_BRK_IMP:
     read_cpu(ctx, PC(ctx));
     incrementPC(ctx);
     push_cpu(ctx, PC(ctx) >> 8);
     push_cpu(ctx, PC(ctx) & 0xFF);
-    push_cpu(ctx, ctx->regP | FLAG_B | FLAG_U);
+    push_cpu(ctx, ctx->regP | CPU_FLAG_B | CPU_FLAG_U);
     ctx->regPCL = read_cpu(ctx, 0xFFFE);
     ctx->regPCH = read_cpu(ctx, 0xFFFF);
     break;
@@ -107,7 +105,7 @@ void cpu_execute_cpu(CPU *ctx) {
 
   if (ctx->nmiPending)
     execute_nmi(ctx);
-  else if (ctx->irqLine && !(ctx->regP & FLAG_I))
+  else if (ctx->irqLine && !(ctx->regP & CPU_FLAG_I))
     execute_irq(ctx);
 }
 
@@ -115,8 +113,8 @@ void execute_irq(CPU *ctx) {
   read_cpu(ctx, PC(ctx));
   push_cpu(ctx, PC(ctx) >> 8);
   push_cpu(ctx, PC(ctx) & 0xFF);
-  push_cpu(ctx, (ctx->regP & ~FLAG_B) | FLAG_U);
-  ctx->regP |= FLAG_I;
+  push_cpu(ctx, (ctx->regP & ~CPU_FLAG_B) | CPU_FLAG_U);
+  ctx->regP |= CPU_FLAG_I;
   ctx->regPCL = read_cpu(ctx, 0xFFFE);
   ctx->regPCH = read_cpu(ctx, 0xFFFF);
 }
@@ -125,11 +123,9 @@ void execute_nmi(CPU *ctx) {
   read_cpu(ctx, PC(ctx));
   push_cpu(ctx, PC(ctx) >> 8);
   push_cpu(ctx, PC(ctx) & 0xFF);
-  push_cpu(ctx, (ctx->regP & ~FLAG_B) | FLAG_U);
-  ctx->regP |= FLAG_I;
+  push_cpu(ctx, (ctx->regP & ~CPU_FLAG_B) | CPU_FLAG_U);
+  ctx->regP |= CPU_FLAG_I;
   ctx->regPCL = read_cpu(ctx, 0xFFFA);
   ctx->regPCH = read_cpu(ctx, 0xFFFB);
   ctx->nmiPending = false;
 }
-
-void cpu_deinit_cpu(CPU *ctx) { free(ctx); }
