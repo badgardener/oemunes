@@ -2,6 +2,7 @@
 #define MMU_H
 
 #include "cartridge.h"
+#include "controller.h"
 #include "mapper.h"
 
 typedef struct CPU CPU;
@@ -13,9 +14,12 @@ typedef struct Bus {
   CPU *cpu;
 
   Mapper *mapper;
+
+  Controller *player_1;
+  Controller *player_2;
 } Bus;
 
-Bus *bus_init_bus(Cartridge *cart);
+Bus *bus_init_bus(Cartridge *cart, Controller *player_1, Controller *player_2);
 
 void bus_write_cpu(Bus *bus, uint16_t addr, uint8_t val);
 void bus_write_oam(Bus *bus, uint8_t index, uint8_t val);
@@ -23,6 +27,9 @@ uint8_t bus_read_cpu(Bus *bus, uint16_t addr);
 
 void bus_increment_master_clock(Bus *bus);
 
-static inline void deinit_bus(Bus *bus) { free(bus); }
+static inline void bus_deinit_bus(Bus *bus) {
+  if (bus)
+    free(bus);
+}
 
 #endif // MMU_H

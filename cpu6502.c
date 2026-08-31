@@ -10,6 +10,9 @@ void execute_irq(CPU *ctx);
 void execute_nmi(CPU *ctx);
 
 CPU *cpu_init_cpu(Bus *bus) {
+  if (!bus)
+    return NULL;
+
   CPU *cpu = malloc(sizeof(CPU));
 
   if (!cpu)
