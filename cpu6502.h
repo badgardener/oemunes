@@ -288,6 +288,7 @@ typedef struct CPU {
   bool irqLineMapper;
   bool irqLineAPU;
   bool nmiPending;
+  bool jammed;
 
   uint64_t steps;
 } CPU;

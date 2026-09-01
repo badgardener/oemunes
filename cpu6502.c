@@ -30,6 +30,7 @@ CPU *cpu_init_cpu(Bus *bus) {
   cpu->nmiPending = false;
   cpu->irqLineMapper = false;
   cpu->irqLineAPU = false;
+  cpu->jammed = false;
 
   return cpu;
 }
@@ -87,23 +88,65 @@ void incrementPC(CPU *ctx) {
 }
 
 void cpu_execute_cpu(CPU *ctx) {
+  if (ctx->jammed) {
+    bus_increment_master_clock(ctx->bus);
+    return;
+  }
+
   ctx->opcode = read_cpu(ctx, PC(ctx));
   incrementPC(ctx);
 
   switch (ctx->opcode) {
-  case OPCODE_BRK_IMP:
+  case OPCODE_BRK_IMP: {
     read_cpu(ctx, PC(ctx));
     incrementPC(ctx);
     push_cpu(ctx, PC(ctx) >> 8);
     push_cpu(ctx, PC(ctx) & 0xFF);
     push_cpu(ctx, ctx->regP | CPU_FLAG_B | CPU_FLAG_U);
+    ctx->regP |= CPU_FLAG_I;
     ctx->regPCL = read_cpu(ctx, 0xFFFE);
     ctx->regPCH = read_cpu(ctx, 0xFFFF);
     break;
+  }
+
+  case OPCODE_ORA_IZX: {
+    uint8_t zp = read_cpu(ctx, PC(ctx));
+    incrementPC(ctx);
+    uint8_t ptr = (uint8_t)(zp + ctx->regX);
+    read_cpu(ctx, ptr);
+    uint8_t lo = read_cpu(ctx, ptr);
+    uint8_t hi = read_cpu(ctx, (uint8_t)(ptr + 1));
+    uint16_t addr = ((uint16_t)hi << 8) | lo;
+    uint8_t val = read_cpu(ctx, addr);
+    ctx->regA |= val;
+    ctx->regP &= ~(CPU_FLAG_N | CPU_FLAG_Z);
+    if (ctx->regA == 0)
+      ctx->regP |= CPU_FLAG_Z;
+    if (ctx->regA & 0x80)
+      ctx->regP |= CPU_FLAG_N;
+    break;
+  }
+
+  case OPCODE_KIL_IMP:
+  case OPCODE_KIL_IMP_2:
+  case OPCODE_KIL_IMP_3:
+  case OPCODE_KIL_IMP_4:
+  case OPCODE_KIL_IMP_5:
+  case OPCODE_KIL_IMP_6:
+  case OPCODE_KIL_IMP_7:
+  case OPCODE_KIL_IMP_8:
+  case OPCODE_KIL_IMP_9:
+  case OPCODE_KIL_IMP_10:
+  case OPCODE_KIL_IMP_11:
+  case OPCODE_KIL_IMP_12: {
+    read_cpu(ctx, PC(ctx));
+    ctx->jammed = true;
+    break;
+  }
 
     /*
      TODO:
-     All 255 more OPCODE needed to be implemented.
+     All 242 more OPCODE needed to be implemented.
     */
   }
 
