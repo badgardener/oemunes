@@ -89,7 +89,7 @@ void incrementPC(CPU *ctx) {
 
 void cpu_execute_cpu(CPU *ctx) {
   if (ctx->jammed) {
-    bus_increment_master_clock(ctx->bus);
+    read_cpu(ctx, PC(ctx));
     return;
   }
 
@@ -127,6 +127,77 @@ void cpu_execute_cpu(CPU *ctx) {
     break;
   }
 
+  case OPCODE_NOP_IMP:
+  case OPCODE_NOP_IMP_2:
+  case OPCODE_NOP_IMP_3:
+  case OPCODE_NOP_IMP_4:
+  case OPCODE_NOP_IMP_5:
+  case OPCODE_NOP_IMP_6:
+  case OPCODE_NOP_IMP_7:
+  case OPCODE_NOP_IMP_8:
+  case OPCODE_NOP_IMP_9:
+  case OPCODE_NOP_IMP_10: {
+    read_cpu(ctx, PC(ctx));
+    break;
+  }
+
+  case OPCODE_NOP_IMM:
+  case OPCODE_NOP_IMM_2: {
+    read_cpu(ctx, PC(ctx));
+    incrementPC(ctx);
+    break;
+  }
+
+  case OPCODE_NOP_ZP0:
+  case OPCODE_NOP_ZP0_2:
+  case OPCODE_NOP_ZP0_3: {
+    uint8_t zp = read_cpu(ctx, PC(ctx));
+    incrementPC(ctx);
+    read_cpu(ctx, zp);
+    break;
+  }
+
+  case OPCODE_NOP_ZPX:
+  case OPCODE_NOP_ZPX_2:
+  case OPCODE_NOP_ZPX_3:
+  case OPCODE_NOP_ZPX_4:
+  case OPCODE_NOP_ZPX_5:
+  case OPCODE_NOP_ZPX_6: {
+    uint8_t zp = read_cpu(ctx, PC(ctx));
+    incrementPC(ctx);
+    read_cpu(ctx, zp);
+    uint8_t ptr = (uint8_t)(zp + ctx->regX);
+    read_cpu(ctx, ptr);
+    break;
+  }
+
+  case OPCODE_NOP_ABS: {
+    uint8_t lo = read_cpu(ctx, PC(ctx));
+    incrementPC(ctx);
+    uint8_t hi = read_cpu(ctx, PC(ctx));
+    incrementPC(ctx);
+    read_cpu(ctx, ((uint16_t)hi << 8) | lo);
+    break;
+  }
+
+  case OPCODE_NOP_ABX:
+  case OPCODE_NOP_ABX_2:
+  case OPCODE_NOP_ABX_3:
+  case OPCODE_NOP_ABX_4:
+  case OPCODE_NOP_ABX_5:
+  case OPCODE_NOP_ABX_6: {
+    uint8_t lo = read_cpu(ctx, PC(ctx));
+    incrementPC(ctx);
+    uint8_t hi = read_cpu(ctx, PC(ctx));
+    incrementPC(ctx);
+    uint16_t base = ((uint16_t)hi << 8) | lo;
+    uint16_t addr = base + ctx->regX;
+    if ((base & 0xFF00) != (addr & 0xFF00))
+      read_cpu(ctx, (base & 0xFF00) | (addr & 0x00FF));
+    read_cpu(ctx, addr);
+    break;
+  }
+
   case OPCODE_KIL_IMP:
   case OPCODE_KIL_IMP_2:
   case OPCODE_KIL_IMP_3:
@@ -145,8 +216,7 @@ void cpu_execute_cpu(CPU *ctx) {
   }
 
     /*
-     TODO:
-     All 242 more OPCODE needed to be implemented.
+     Other 214 more OPCODE needed to be implemented.
     */
   }
 
