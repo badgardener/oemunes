@@ -151,4 +151,5 @@ void bus_increment_master_clock(Bus *bus) {
   }
 
   bus->ppu_accum -= bus->ppu_cpu_ratio;
+  bus->cpu->irqLineMapper = mapper_isIrq(bus->mapper);
 }

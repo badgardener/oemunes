@@ -285,7 +285,8 @@ typedef struct CPU {
   uint8_t opcode;
 
   Bus *bus;
-  bool irqLine;
+  bool irqLineMapper;
+  bool irqLineAPU;
   bool nmiPending;
 
   uint64_t steps;

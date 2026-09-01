@@ -28,7 +28,8 @@ CPU *cpu_init_cpu(Bus *bus) {
   cpu->regPCH = bus_read_cpu(bus, 0xFFFD);
   cpu->steps = 0;
   cpu->nmiPending = false;
-  cpu->irqLine = false;
+  cpu->irqLineMapper = false;
+  cpu->irqLineAPU = false;
 
   return cpu;
 }
@@ -108,7 +109,7 @@ void cpu_execute_cpu(CPU *ctx) {
 
   if (ctx->nmiPending)
     execute_nmi(ctx);
-  else if (ctx->irqLine && !(ctx->regP & CPU_FLAG_I))
+  else if ((ctx->irqLineMapper || ctx->irqLineAPU) && !(ctx->regP & CPU_FLAG_I))
     execute_irq(ctx);
 }
 
