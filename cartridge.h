@@ -68,6 +68,9 @@ static inline void drop_cartridge(Cartridge *cart) {
       free(cart->chrRam);
     if (cart->chrNvRam)
       free(cart->chrNvRam);
+
+    if (cart->trainerData)
+      free(cart->trainerData);
   }
 }
 

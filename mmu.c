@@ -39,10 +39,15 @@ Bus *bus_init_bus(Cartridge *cart) {
   bus->ppu_accum = 0.0;
   bus->ppu_cpu_ratio = cart->region == REGION_PAL ? 3.2 : 3.0;
 
-  bus->cpu = cpu_init_cpu(bus);
   bus->ppu = ppu_init_ppu(bus);
+  bus->cpu = cpu_init_cpu(bus);
 
   bus->mirror = &cart->mirroring;
+
+  if (cart->trainer)
+    for (uint16_t i = 0; i < 512; i++)
+      bus_write_cpu(bus, 0x7000 + i, cart->trainerData[i]);
+
   return bus;
 }
 
