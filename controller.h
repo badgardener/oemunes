@@ -30,9 +30,4 @@ bool get_state(Controller *ctx, uint8_t btn);
 void controller_write_bus(Controller *ctx, uint8_t data);
 uint8_t controller_read_bus(Controller *ctx);
 
-static inline void controller_destroy_controller(Controller *ctx) {
-  if (ctx)
-    free(ctx);
-}
-
 #endif

@@ -15,9 +15,4 @@ uint8_t ppu_read_cpu(PPU *ctx, uint8_t reg);
 
 void ppu_clock_ppu(PPU *ctx);
 
-static inline void ppu_deinit_ppu(PPU *ppu) {
-  if (ppu)
-    free(ppu);
-}
-
 #endif // PPU_H

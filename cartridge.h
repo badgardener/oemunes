@@ -53,8 +53,22 @@ typedef struct Cartridge {
 Cartridge *cartridge_build_cartridge(uint8_t *rom, size_t romSize);
 
 static inline void drop_cartridge(Cartridge *cart) {
-  if (cart)
+  if (cart) {
     free(cart);
+
+    if (cart->prgRom)
+      free(cart->prgRom);
+    if (cart->prgRam)
+      free(cart->prgRam);
+    if (cart->prgNvRam)
+      free(cart->prgNvRam);
+    if (cart->chrRom)
+      free(cart->chrRom);
+    if (cart->chrRam)
+      free(cart->chrRam);
+    if (cart->chrNvRam)
+      free(cart->chrNvRam);
+  }
 }
 
 #endif // CARTRIDGE_H

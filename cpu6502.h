@@ -296,9 +296,4 @@ typedef struct CPU {
 CPU *cpu_init_cpu(Bus *bus);
 void cpu_execute_cpu(CPU *ctx);
 
-static inline void cpu_deinit_cpu(CPU *ctx) {
-  if (ctx)
-    free(ctx);
-}
-
 #endif // CPU6502_H

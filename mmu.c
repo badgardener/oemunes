@@ -1,6 +1,6 @@
 #include "mmu.h"
+#include "controller.h"
 #include "cpu6502.h"
-#include "mapper.h"
 #include "ppu.h"
 
 uint16_t mirror_ppu_address(uint16_t addr, uint8_t mirror);
@@ -25,16 +25,14 @@ uint16_t mirror_ppu_address(uint16_t addr, uint8_t mirror) {
   return addr;
 }
 
-Bus *bus_init_bus(Cartridge *cart, Controller *player_1, Controller *player_2) {
+Bus *bus_init_bus(Cartridge *cart) {
   Bus *bus = malloc(sizeof(Bus));
 
   if (!bus)
     return NULL;
 
-  if (player_1)
-    bus->player_1 = player_1;
-  if (player_2)
-    bus->player_2 = player_2;
+  bus->player_1 = controller_build_controller();
+  bus->player_2 = controller_build_controller();
 
   bus->mapper = mapper_build_mapper(cart->mapper, cart->submapper, cart);
 
