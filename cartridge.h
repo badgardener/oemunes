@@ -50,12 +50,19 @@ typedef struct Cartridge {
   uint8_t *trainerData;
 } Cartridge;
 
-Cartridge *cartridge_build_cartridge(uint8_t *rom, size_t romSize);
+typedef enum CartridgeError {
+  CARTRIDGE_OK = 0,
+  CARTRIDGE_SMALL_ROM,
+  CARTRIDGE_INVALID_ROM,
+  CARTRIDGE_MEMORY_ERROR,
+  CARTRIDGE_INVALID_DATA
+} CartridgeError;
 
-static inline void drop_cartridge(Cartridge *cart) {
+Cartridge *cartridge_build_cartridge(uint8_t *rom, size_t romSize,
+                                     CartridgeError *error);
+
+static inline void cartridge_drop_cartridge(Cartridge *cart) {
   if (cart) {
-    free(cart);
-
     if (cart->prgRom)
       free(cart->prgRom);
     if (cart->prgRam)
@@ -71,6 +78,8 @@ static inline void drop_cartridge(Cartridge *cart) {
 
     if (cart->trainerData)
       free(cart->trainerData);
+
+    free(cart);
   }
 }
 

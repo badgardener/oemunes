@@ -45,8 +45,6 @@ void bus_increment_master_clock(Bus *bus);
 
 static inline void bus_deinit_bus(Bus *bus) {
   if (bus) {
-    free(bus);
-
     if (bus->cpu)
       free(bus->cpu);
     if (bus->ppu)
@@ -61,6 +59,8 @@ static inline void bus_deinit_bus(Bus *bus) {
       free(bus->player_1);
     if (bus->player_2)
       free(bus->player_2);
+
+    free(bus);
   }
 }
 

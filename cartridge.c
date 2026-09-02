@@ -30,17 +30,27 @@ size_t nes2_rom_size(uint8_t lsb, uint8_t msb) {
   return ((size_t)multiplier << exponent);
 }
 
-Cartridge *cartridge_build_cartridge(uint8_t *rom, size_t romSize) {
-  if (!rom || romSize < 16)
+Cartridge *cartridge_build_cartridge(uint8_t *rom, size_t romSize,
+                                     CartridgeError *error) {
+  if (!rom || romSize < 16) {
+    if (error)
+      *error = CARTRIDGE_SMALL_ROM;
     return NULL;
+  }
 
-  if (rom[0] != 'N' || rom[1] != 'E' || rom[2] != 'S' || rom[3] != 0x1A)
+  if (rom[0] != 'N' || rom[1] != 'E' || rom[2] != 'S' || rom[3] != 0x1A) {
+    if (error)
+      *error = CARTRIDGE_INVALID_ROM;
     return NULL;
+  }
 
   Cartridge *cart = calloc(1, sizeof(Cartridge));
 
-  if (!cart)
+  if (!cart) {
+    if (error)
+      *error = CARTRIDGE_MEMORY_ERROR;
     return NULL;
+  }
 
   cart->is_nes2 = (rom[7] & 0x0C) == 0x08;
 
@@ -167,6 +177,8 @@ Cartridge *cartridge_build_cartridge(uint8_t *rom, size_t romSize) {
       goto fail;
   }
 
+  if (error)
+    *error = CARTRIDGE_OK;
   return cart;
 
 fail:
@@ -179,5 +191,7 @@ fail:
   free(cart->trainerData);
   free(cart);
 
+  if (error)
+    *error = CARTRIDGE_INVALID_DATA;
   return NULL;
 }
