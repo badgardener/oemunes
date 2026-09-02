@@ -32,7 +32,7 @@ typedef struct Bus {
   Controller *player_2;
 } Bus;
 
-Bus *bus_init_bus(Cartridge *cart);
+Bus *bus_init_bus(Cartridge *cart, bool *mapper_found);
 
 void bus_write_cpu(Bus *bus, uint16_t addr, uint8_t val);
 void bus_write_oam(Bus *bus, uint8_t index, uint8_t val);
@@ -42,6 +42,7 @@ void bus_write_ppu(Bus *bus, uint16_t addr, uint8_t val);
 uint8_t bus_read_ppu(Bus *bus, uint16_t addr);
 
 void bus_increment_master_clock(Bus *bus);
+void bus_do_execute_cpu(Bus *bus);
 
 static inline void bus_deinit_bus(Bus *bus) {
   if (bus) {

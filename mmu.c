@@ -25,7 +25,10 @@ uint16_t mirror_ppu_address(uint16_t addr, uint8_t mirror) {
   return addr;
 }
 
-Bus *bus_init_bus(Cartridge *cart) {
+Bus *bus_init_bus(Cartridge *cart, bool *mapper_found) {
+  if (!cart)
+    return NULL;
+
   Bus *bus = malloc(sizeof(Bus));
 
   if (!bus)
@@ -35,6 +38,11 @@ Bus *bus_init_bus(Cartridge *cart) {
   bus->player_2 = controller_build_controller();
 
   bus->mapper = mapper_build_mapper(cart->mapper, cart->submapper, cart);
+  if (!bus->mapper) {
+    bus_deinit_bus(bus);
+    *mapper_found = false;
+    return NULL;
+  }
 
   bus->ppu_accum = 0.0;
   bus->ppu_cpu_ratio = cart->region == REGION_PAL ? 3.2 : 3.0;
@@ -47,6 +55,12 @@ Bus *bus_init_bus(Cartridge *cart) {
   if (cart->trainer)
     for (uint16_t i = 0; i < 512; i++)
       bus_write_cpu(bus, 0x7000 + i, cart->trainerData[i]);
+
+  if (!(bus->cpu && bus->ppu /* && bus->apu */ && bus->player_1 &&
+        bus->player_2)) {
+    bus_deinit_bus(bus);
+    return NULL;
+  }
 
   return bus;
 }
@@ -155,4 +169,9 @@ void bus_increment_master_clock(Bus *bus) {
 
   bus->ppu_accum -= bus->ppu_cpu_ratio;
   bus->cpu->irqLineMapper = mapper_isIrq(bus->mapper);
+}
+
+void bus_do_execute_cpu(Bus *bus) {
+  if (bus)
+    cpu_execute_cpu(bus->cpu);
 }
