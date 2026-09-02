@@ -3,9 +3,9 @@
 
 #include "mapper_base.hpp"
 
-class Mapper0000 : public Mapper {
+class NROM : public Mapper {
 public:
-  Mapper0000(Cartridge *cart) : Mapper(cart) {}
+  NROM(Cartridge *cart) : Mapper(cart) {}
 
   std::int16_t cpu_read(std::uint16_t addr) override {
     if (addr >= 0x6000 && addr <= 0x7FFF) {
@@ -15,14 +15,14 @@ public:
       if (cart->prgNvRamSize)
         return cart->prgNvRam[addr - 0x6000];
 
-      return -1; // Handled in mmu later.
+      return -1;
     }
 
     if (addr >= 0x8000) {
       std::size_t offset = addr - 0x8000;
 
       if (cart->prgRomSize == 0)
-        return -1; // Handled in mmu later.
+        return -1;
 
       if (cart->prgRomSize == 0x4000)
         offset &= 0x3FFF;
@@ -30,7 +30,7 @@ public:
       return cart->prgRom[offset];
     }
 
-    return -1; // Handled in mmu later.
+    return -1;
   }
 
   void cpu_write(std::uint16_t addr, std::uint8_t val) override {
@@ -44,7 +44,7 @@ public:
 
   std::int16_t ppu_read(std::uint16_t addr) override {
     if (addr > 0x1FFF)
-      return -1; // Handled in mmu later.
+      return -1;
 
     if (cart->chrRomSize)
       return cart->chrRom[addr];
@@ -55,7 +55,7 @@ public:
     if (cart->chrNvRamSize)
       return cart->chrNvRam[addr];
 
-    return -1; // Handled in mmu later.
+    return -1;
   }
 
   void ppu_write(std::uint16_t addr, std::uint8_t val) override {

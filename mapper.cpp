@@ -1,5 +1,4 @@
-#include "mappers/mapper0000.cpp"
-
+#include "mappers/nrom.cpp"
 #include "mapper.h"
 
 extern "C" inline Mapper *mapper_build_mapper(std::uint16_t mapper_id,
@@ -7,9 +6,9 @@ extern "C" inline Mapper *mapper_build_mapper(std::uint16_t mapper_id,
                                               Cartridge *cart) {
   switch (mapper_id) {
   case 0x0000:
-    return new Mapper0000(cart);
+    return new NROM(cart);
   default:
-    return __null;
+    return NULL;
   }
 }
 
