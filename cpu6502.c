@@ -93,7 +93,7 @@ void cpu_execute_cpu(CPU *ctx) {
     return;
   }
 
-  ctx->opcode = read_cpu(ctx, PC(ctx));
+  ctx->opcode = (OPCode)read_cpu(ctx, PC(ctx));
   incrementPC(ctx);
 
   switch (ctx->opcode) {

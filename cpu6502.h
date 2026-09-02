@@ -5,7 +5,7 @@
 
 // === 42 / 256 Implemented === //
 
-enum {
+typedef enum {
   /* IMPLEMENTED */ OPCODE_BRK_IMP,
   /* IMPLEMENTED */ OPCODE_ORA_IZX,
   /* IMPLEMENTED */ OPCODE_KIL_IMP,
@@ -262,7 +262,7 @@ enum {
   OPCODE_SBC_ABX,
   OPCODE_INC_ABX,
   OPCODE_ISC_ABX
-};
+} OPCode;
 
 enum {
   CPU_FLAG_N = 0b10000000,
@@ -284,7 +284,7 @@ typedef struct CPU {
 
   uint8_t regPCL;
   uint8_t regPCH;
-  uint8_t opcode;
+  OPCode opcode;
 
   Bus *bus;
   bool irqLineMapper;
