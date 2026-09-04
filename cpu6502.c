@@ -9,7 +9,22 @@ void incrementPC(CPU *ctx);
 void execute_irq(CPU *ctx);
 void execute_nmi(CPU *ctx);
 
+uint16_t get_address_imp(CPU *ctx);
+uint16_t get_address_imm(CPU *ctx);
+uint16_t get_address_acc(CPU *ctx);
+uint16_t get_address_zp0(CPU *ctx);
+uint16_t get_address_zpx(CPU *ctx);
+uint16_t get_address_zpy(CPU *ctx);
+uint16_t get_address_abs(CPU *ctx);
+uint16_t get_address_abx(CPU *ctx, bool force_dummy);
+uint16_t get_address_aby(CPU *ctx, bool force_dummy);
+uint16_t get_address_rel(CPU *ctx);
+uint16_t get_address_ind(CPU *ctx);
+uint16_t get_address_izx(CPU *ctx);
+uint16_t get_address_izy(CPU *ctx, bool force_dummy);
+
 void execute_slo(CPU *ctx, uint16_t addr);
+void execute_ora(CPU *ctx, uint16_t addr);
 
 CPU *cpu_init_cpu(Bus *bus) {
   if (!bus)
@@ -115,20 +130,8 @@ void cpu_execute_cpu(CPU *ctx) {
   }
 
   case OPCODE_ORA_IZX: {
-    uint8_t zp = read_cpu(ctx, PC(ctx));
-    incrementPC(ctx);
-    uint8_t ptr = (uint8_t)(zp + ctx->regX);
-    read_cpu(ctx, ptr);
-    uint8_t lo = read_cpu(ctx, ptr);
-    uint8_t hi = read_cpu(ctx, (uint8_t)(ptr + 1));
-    uint16_t addr = ((uint16_t)hi << 8) | lo;
-    uint8_t val = read_cpu(ctx, addr);
-    ctx->regA |= val;
-    ctx->regP &= ~(CPU_FLAG_N | CPU_FLAG_Z);
-    if (ctx->regA == 0)
-      ctx->regP |= CPU_FLAG_Z;
-    if (ctx->regA & 0x80)
-      ctx->regP |= CPU_FLAG_N;
+    uint16_t addr = get_address_izx(ctx);
+    execute_ora(ctx, addr);
     break;
   }
 
@@ -221,75 +224,43 @@ void cpu_execute_cpu(CPU *ctx) {
   }
 
   case OPCODE_SLO_IZX: {
-    uint8_t zp = read_cpu(ctx, PC(ctx));
-    incrementPC(ctx);
-    uint8_t ptr = (uint8_t)(zp + ctx->regX);
-    read_cpu(ctx, ptr);
-    uint8_t lo = read_cpu(ctx, ptr);
-    uint8_t hi = read_cpu(ctx, (uint8_t)(ptr + 1));
-    uint16_t addr = ((uint16_t)hi << 8) | lo;
+    uint16_t addr = get_address_izx(ctx);
     execute_slo(ctx, addr);
     break;
   }
 
   case OPCODE_SLO_IZY: {
-    uint8_t zp = read_cpu(ctx, PC(ctx));
-    incrementPC(ctx);
-    uint8_t lo = read_cpu(ctx, zp);
-    uint8_t hi = read_cpu(ctx, (uint8_t)(zp + 1));
-    uint16_t base = ((uint16_t)hi << 8) | lo;
-    uint16_t addr = base + ctx->regY;
-    read_cpu(ctx, (base & 0xFF00) | (addr & 0x00FF));
+    uint16_t addr = get_address_izy(ctx, true);
     execute_slo(ctx, addr);
     break;
   }
 
   case OPCODE_SLO_ZP0: {
-    uint8_t zp = read_cpu(ctx, PC(ctx));
-    incrementPC(ctx);
-    execute_slo(ctx, zp);
+    uint16_t addr = get_address_zp0(ctx);
+    execute_slo(ctx, addr);
     break;
   }
 
   case OPCODE_SLO_ZPX: {
-    uint8_t zp = read_cpu(ctx, PC(ctx));
-    incrementPC(ctx);
-    read_cpu(ctx, zp);
-    uint8_t addr = (uint8_t)(zp + ctx->regX);
+    uint16_t addr = get_address_zpx(ctx);
     execute_slo(ctx, addr);
     break;
   }
 
   case OPCODE_SLO_ABS: {
-    uint8_t lo = read_cpu(ctx, PC(ctx));
-    incrementPC(ctx);
-    uint8_t hi = read_cpu(ctx, PC(ctx));
-    incrementPC(ctx);
-    uint16_t addr = ((uint16_t)hi << 8) | lo;
+    uint16_t addr = get_address_abs(ctx);
     execute_slo(ctx, addr);
     break;
   }
 
   case OPCODE_SLO_ABX: {
-    uint8_t lo = read_cpu(ctx, PC(ctx));
-    incrementPC(ctx);
-    uint8_t hi = read_cpu(ctx, PC(ctx));
-    incrementPC(ctx);
-    uint16_t base = ((uint16_t)hi << 8) | lo;
-    uint16_t addr = base + ctx->regX;
-    read_cpu(ctx, (base & 0xFF00) | (addr & 0x00FF));
+    uint16_t addr = get_address_abx(ctx, true);
     execute_slo(ctx, addr);
     break;
   }
 
   case OPCODE_SLO_ABY: {
-    uint8_t lo = read_cpu(ctx, PC(ctx));
-    incrementPC(ctx);
-    uint8_t hi = read_cpu(ctx, PC(ctx));
-    incrementPC(ctx);
-    uint16_t base = ((uint16_t)hi << 8) | lo;
-    uint16_t addr = base + ctx->regY;
-    read_cpu(ctx, (base & 0xFF00) | (addr & 0x00FF));
+    uint16_t addr = get_address_aby(ctx, true);
     execute_slo(ctx, addr);
     break;
   }
@@ -326,6 +297,107 @@ void execute_nmi(CPU *ctx) {
   ctx->nmiPending = false;
 }
 
+uint16_t get_address_imp(CPU *ctx) { return 0; }
+
+uint16_t get_address_acc(CPU *ctx) { return 0; }
+
+uint16_t get_address_imm(CPU *ctx) {
+  uint16_t addr = PC(ctx);
+  incrementPC(ctx);
+  return addr;
+}
+uint16_t get_address_zp0(CPU *ctx) {
+  uint8_t addr = read_cpu(ctx, PC(ctx));
+  incrementPC(ctx);
+  return addr;
+}
+
+uint16_t get_address_zpx(CPU *ctx) {
+  uint8_t addr = read_cpu(ctx, PC(ctx));
+  incrementPC(ctx);
+  read_cpu(ctx, addr);
+  return (uint8_t)(addr + ctx->regX);
+}
+
+uint16_t get_address_zpy(CPU *ctx) {
+  uint8_t addr = read_cpu(ctx, PC(ctx));
+  incrementPC(ctx);
+  read_cpu(ctx, addr);
+  return (uint8_t)(addr + ctx->regY);
+}
+
+uint16_t get_address_abs(CPU *ctx) {
+  uint8_t lo = read_cpu(ctx, PC(ctx));
+  incrementPC(ctx);
+  uint8_t hi = read_cpu(ctx, PC(ctx));
+  incrementPC(ctx);
+  return ((uint16_t)hi << 8) | lo;
+}
+
+uint16_t get_address_abx(CPU *ctx, bool force_dummy) {
+  uint8_t lo = read_cpu(ctx, PC(ctx));
+  incrementPC(ctx);
+  uint8_t hi = read_cpu(ctx, PC(ctx));
+  incrementPC(ctx);
+  uint16_t base = ((uint16_t)hi << 8) | lo;
+  uint16_t addr = base + ctx->regX;
+  if (force_dummy || (base & 0xFF00) != (addr & 0xFF00))
+    read_cpu(ctx, (base & 0xFF00) | (addr & 0x00FF));
+  return addr;
+}
+
+uint16_t get_address_aby(CPU *ctx, bool force_dummy) {
+  uint8_t lo = read_cpu(ctx, PC(ctx));
+  incrementPC(ctx);
+  uint8_t hi = read_cpu(ctx, PC(ctx));
+  incrementPC(ctx);
+  uint16_t base = ((uint16_t)hi << 8) | lo;
+  uint16_t addr = base + ctx->regY;
+  if (force_dummy || (base & 0xFF00) != (addr & 0xFF00))
+    read_cpu(ctx, (base & 0xFF00) | (addr & 0x00FF));
+  return addr;
+}
+
+uint16_t get_address_rel(CPU *ctx) {
+  uint8_t offset = read_cpu(ctx, PC(ctx));
+  incrementPC(ctx);
+  return PC(ctx) + (int8_t)offset;
+}
+
+uint16_t get_address_ind(CPU *ctx) {
+  uint8_t lo = read_cpu(ctx, PC(ctx));
+  incrementPC(ctx);
+  uint8_t hi = read_cpu(ctx, PC(ctx));
+  incrementPC(ctx);
+  uint16_t ptr = ((uint16_t)hi << 8) | lo;
+  uint8_t targetLo = read_cpu(ctx, ptr);
+  uint16_t nextPtr = (ptr & 0xFF00) | ((ptr + 1) & 0x00FF);
+  uint8_t targetHi = read_cpu(ctx, nextPtr);
+  return ((uint16_t)targetHi << 8) | targetLo;
+}
+
+uint16_t get_address_izx(CPU *ctx) {
+  uint8_t zp = read_cpu(ctx, PC(ctx));
+  incrementPC(ctx);
+  uint8_t ptr = (uint8_t)(zp + ctx->regX);
+  read_cpu(ctx, ptr);
+  uint8_t lo = read_cpu(ctx, ptr);
+  uint8_t hi = read_cpu(ctx, (uint8_t)(ptr + 1));
+  return ((uint16_t)hi << 8) | lo;
+}
+
+uint16_t get_address_izy(CPU *ctx, bool force_dummy) {
+  uint8_t zp = read_cpu(ctx, PC(ctx));
+  incrementPC(ctx);
+  uint8_t lo = read_cpu(ctx, zp);
+  uint8_t hi = read_cpu(ctx, (uint8_t)(zp + 1));
+  uint16_t base = ((uint16_t)hi << 8) | lo;
+  uint16_t addr = base + ctx->regY;
+  if (force_dummy || (base & 0xFF00) != (addr & 0xFF00))
+    read_cpu(ctx, (base & 0xFF00) | (addr & 0x00FF));
+  return addr;
+}
+
 void execute_slo(CPU *ctx, uint16_t addr) {
   uint8_t val = read_cpu(ctx, addr);
   write_cpu(ctx, addr, val);
@@ -334,6 +406,16 @@ void execute_slo(CPU *ctx, uint16_t addr) {
     ctx->regP |= CPU_FLAG_C;
   val <<= 1;
   write_cpu(ctx, addr, val);
+  ctx->regA |= val;
+  ctx->regP &= ~(CPU_FLAG_N | CPU_FLAG_Z);
+  if (ctx->regA == 0)
+    ctx->regP |= CPU_FLAG_Z;
+  if (ctx->regA & 0x80)
+    ctx->regP |= CPU_FLAG_N;
+}
+
+void execute_ora(CPU *ctx, uint16_t addr) {
+  uint8_t val = read_cpu(ctx, addr);
   ctx->regA |= val;
   ctx->regP &= ~(CPU_FLAG_N | CPU_FLAG_Z);
   if (ctx->regA == 0)
