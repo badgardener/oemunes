@@ -135,6 +135,94 @@ void cpu_execute_cpu(CPU *ctx) {
     break;
   }
 
+  case OPCODE_ORA_ZP0: {
+    uint16_t addr = get_address_zp0(ctx);
+    execute_ora(ctx, addr);
+    break;
+  }
+
+  case OPCODE_ORA_IMM: {
+    uint16_t addr = get_address_imm(ctx);
+    execute_ora(ctx, addr);
+    break;
+  }
+
+  case OPCODE_ORA_ABS: {
+    uint16_t addr = get_address_abs(ctx);
+    execute_ora(ctx, addr);
+    break;
+  }
+
+  case OPCODE_ORA_IZY: {
+    uint16_t addr = get_address_izy(ctx, false);
+    execute_ora(ctx, addr);
+    break;
+  }
+
+  case OPCODE_ORA_ZPX: {
+    uint16_t addr = get_address_zpx(ctx);
+    execute_ora(ctx, addr);
+    break;
+  }
+
+  case OPCODE_ORA_ABY: {
+    uint16_t addr = get_address_aby(ctx, false);
+    execute_ora(ctx, addr);
+    break;
+  }
+
+  case OPCODE_ORA_ABX: {
+    uint16_t addr = get_address_abx(ctx, false);
+    execute_ora(ctx, addr);
+    break;
+  }
+
+  case OPCODE_SLO_IZX: {
+    uint16_t addr = get_address_izx(ctx);
+    execute_slo(ctx, addr);
+    break;
+  }
+
+  case OPCODE_SLO_IZY: {
+    uint16_t addr = get_address_izy(ctx, true);
+    execute_slo(ctx, addr);
+    break;
+  }
+
+  case OPCODE_SLO_ZP0: {
+    uint16_t addr = get_address_zp0(ctx);
+    execute_slo(ctx, addr);
+    break;
+  }
+
+  case OPCODE_SLO_ZPX: {
+    uint16_t addr = get_address_zpx(ctx);
+    execute_slo(ctx, addr);
+    break;
+  }
+
+  case OPCODE_SLO_ABS: {
+    uint16_t addr = get_address_abs(ctx);
+    execute_slo(ctx, addr);
+    break;
+  }
+
+  case OPCODE_SLO_ABX: {
+    uint16_t addr = get_address_abx(ctx, true);
+    execute_slo(ctx, addr);
+    break;
+  }
+
+  case OPCODE_SLO_ABY: {
+    uint16_t addr = get_address_aby(ctx, true);
+    execute_slo(ctx, addr);
+    break;
+  }
+
+    /*
+     Other 200 more OPCODE needed to be implemented.
+    */
+
   case OPCODE_NOP_IMP:
   case OPCODE_NOP_IMP_2:
   case OPCODE_NOP_IMP_3:
@@ -222,52 +310,6 @@ void cpu_execute_cpu(CPU *ctx) {
     ctx->jammed = true;
     break;
   }
-
-  case OPCODE_SLO_IZX: {
-    uint16_t addr = get_address_izx(ctx);
-    execute_slo(ctx, addr);
-    break;
-  }
-
-  case OPCODE_SLO_IZY: {
-    uint16_t addr = get_address_izy(ctx, true);
-    execute_slo(ctx, addr);
-    break;
-  }
-
-  case OPCODE_SLO_ZP0: {
-    uint16_t addr = get_address_zp0(ctx);
-    execute_slo(ctx, addr);
-    break;
-  }
-
-  case OPCODE_SLO_ZPX: {
-    uint16_t addr = get_address_zpx(ctx);
-    execute_slo(ctx, addr);
-    break;
-  }
-
-  case OPCODE_SLO_ABS: {
-    uint16_t addr = get_address_abs(ctx);
-    execute_slo(ctx, addr);
-    break;
-  }
-
-  case OPCODE_SLO_ABX: {
-    uint16_t addr = get_address_abx(ctx, true);
-    execute_slo(ctx, addr);
-    break;
-  }
-
-  case OPCODE_SLO_ABY: {
-    uint16_t addr = get_address_aby(ctx, true);
-    execute_slo(ctx, addr);
-    break;
-  }
-
-    /*
-     Other 207 more OPCODE needed to be implemented.
-    */
   }
 
   if (ctx->nmiPending)
