@@ -9,6 +9,8 @@ void incrementPC(CPU *ctx);
 void execute_irq(CPU *ctx);
 void execute_nmi(CPU *ctx);
 
+void execute_slo(CPU *ctx, uint16_t addr);
+
 CPU *cpu_init_cpu(Bus *bus) {
   if (!bus)
     return NULL;
@@ -88,6 +90,9 @@ void incrementPC(CPU *ctx) {
 }
 
 void cpu_execute_cpu(CPU *ctx) {
+  if (!ctx)
+    return;
+
   if (ctx->jammed) {
     read_cpu(ctx, PC(ctx));
     return;
@@ -215,8 +220,82 @@ void cpu_execute_cpu(CPU *ctx) {
     break;
   }
 
+  case OPCODE_SLO_IZX: {
+    uint8_t zp = read_cpu(ctx, PC(ctx));
+    incrementPC(ctx);
+    uint8_t ptr = (uint8_t)(zp + ctx->regX);
+    read_cpu(ctx, ptr);
+    uint8_t lo = read_cpu(ctx, ptr);
+    uint8_t hi = read_cpu(ctx, (uint8_t)(ptr + 1));
+    uint16_t addr = ((uint16_t)hi << 8) | lo;
+    execute_slo(ctx, addr);
+    break;
+  }
+
+  case OPCODE_SLO_IZY: {
+    uint8_t zp = read_cpu(ctx, PC(ctx));
+    incrementPC(ctx);
+    uint8_t lo = read_cpu(ctx, zp);
+    uint8_t hi = read_cpu(ctx, (uint8_t)(zp + 1));
+    uint16_t base = ((uint16_t)hi << 8) | lo;
+    uint16_t addr = base + ctx->regY;
+    read_cpu(ctx, (base & 0xFF00) | (addr & 0x00FF));
+    execute_slo(ctx, addr);
+    break;
+  }
+
+  case OPCODE_SLO_ZP0: {
+    uint8_t zp = read_cpu(ctx, PC(ctx));
+    incrementPC(ctx);
+    execute_slo(ctx, zp);
+    break;
+  }
+
+  case OPCODE_SLO_ZPX: {
+    uint8_t zp = read_cpu(ctx, PC(ctx));
+    incrementPC(ctx);
+    read_cpu(ctx, zp);
+    uint8_t addr = (uint8_t)(zp + ctx->regX);
+    execute_slo(ctx, addr);
+    break;
+  }
+
+  case OPCODE_SLO_ABS: {
+    uint8_t lo = read_cpu(ctx, PC(ctx));
+    incrementPC(ctx);
+    uint8_t hi = read_cpu(ctx, PC(ctx));
+    incrementPC(ctx);
+    uint16_t addr = ((uint16_t)hi << 8) | lo;
+    execute_slo(ctx, addr);
+    break;
+  }
+
+  case OPCODE_SLO_ABX: {
+    uint8_t lo = read_cpu(ctx, PC(ctx));
+    incrementPC(ctx);
+    uint8_t hi = read_cpu(ctx, PC(ctx));
+    incrementPC(ctx);
+    uint16_t base = ((uint16_t)hi << 8) | lo;
+    uint16_t addr = base + ctx->regX;
+    read_cpu(ctx, (base & 0xFF00) | (addr & 0x00FF));
+    execute_slo(ctx, addr);
+    break;
+  }
+
+  case OPCODE_SLO_ABY: {
+    uint8_t lo = read_cpu(ctx, PC(ctx));
+    incrementPC(ctx);
+    uint8_t hi = read_cpu(ctx, PC(ctx));
+    incrementPC(ctx);
+    uint16_t base = ((uint16_t)hi << 8) | lo;
+    uint16_t addr = base + ctx->regY;
+    read_cpu(ctx, (base & 0xFF00) | (addr & 0x00FF));
+    execute_slo(ctx, addr);
+    break;
+  }
+
     /*
-     Other 214 more OPCODE needed to be implemented.
+     Other 207 more OPCODE needed to be implemented.
     */
   }
 
@@ -245,4 +324,20 @@ void execute_nmi(CPU *ctx) {
   ctx->regPCL = read_cpu(ctx, 0xFFFA);
   ctx->regPCH = read_cpu(ctx, 0xFFFB);
   ctx->nmiPending = false;
+}
+
+void execute_slo(CPU *ctx, uint16_t addr) {
+  uint8_t val = read_cpu(ctx, addr);
+  write_cpu(ctx, addr, val);
+  ctx->regP &= ~CPU_FLAG_C;
+  if (val & 0x80)
+    ctx->regP |= CPU_FLAG_C;
+  val <<= 1;
+  write_cpu(ctx, addr, val);
+  ctx->regA |= val;
+  ctx->regP &= ~(CPU_FLAG_N | CPU_FLAG_Z);
+  if (ctx->regA == 0)
+    ctx->regP |= CPU_FLAG_Z;
+  if (ctx->regA & 0x80)
+    ctx->regP |= CPU_FLAG_N;
 }
